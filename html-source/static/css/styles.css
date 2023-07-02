@@ -1,0 +1,27 @@
+.my-footer{
+    height: 5em;
+    background-color: black;
+    margin-top: 1.5em;
+    padding: 1em;
+    font-size: 80%;
+    color: #FFFFFF;
+}
+.room-image{
+    width: 50%;
+}
+.form-control:focus{
+      box-shadow: none;
+}
+
+/* .datepicker{
+  z-index: 10000;
+} */
+
+.swal2-container .swal2-html-container{
+  overflow:hidden;
+}
+
+.swal2-container .swal2-actions {
+  z-index:0;
+  
+}
