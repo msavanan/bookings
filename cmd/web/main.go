@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/msavanan/bookings/pkg/config"
-	"github.com/msavanan/bookings/pkg/handlers"
-	"github.com/msavanan/bookings/pkg/render"
+	"github.com/msavanan/bookings/internal/config"
+	"github.com/msavanan/bookings/internal/handlers"
+	"github.com/msavanan/bookings/internal/render"
 )
 
 const (
