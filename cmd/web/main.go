@@ -4,11 +4,13 @@ import (
 	"encoding/gob"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/msavanan/bookings/internal/config"
 	"github.com/msavanan/bookings/internal/handlers"
+	"github.com/msavanan/bookings/internal/helpers"
 	"github.com/msavanan/bookings/internal/models"
 	"github.com/msavanan/bookings/internal/render"
 )
@@ -45,6 +47,9 @@ func run() error {
 	//What am i going to store other than basic types in session
 	gob.Register(models.Reservation{})
 
+	app.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	app.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	app.InProduction = false
 
 	session = scs.New()
@@ -68,6 +73,7 @@ func run() error {
 	handlers.NewHandlers(repo)
 
 	render.NewTemplate(&app)
+	helpers.NewHelper(&app)
 
 	return nil
 }

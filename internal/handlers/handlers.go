@@ -8,6 +8,7 @@ import (
 
 	"github.com/msavanan/bookings/internal/config"
 	"github.com/msavanan/bookings/internal/forms"
+	"github.com/msavanan/bookings/internal/helpers"
 	"github.com/msavanan/bookings/internal/models"
 	"github.com/msavanan/bookings/internal/render"
 )
@@ -30,24 +31,12 @@ func NewHandlers(r *Repository) {
 }
 
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-	remoteIp := r.RemoteAddr
-	m.App.Session.Put(r.Context(), "remote_ip", remoteIp)
-
 	render.RenderTemplate(w, r, "home.page.tmpl", &models.TemplateData{})
 
 }
 
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-	stringMap := make(map[string]string)
-	stringMap["test"] = "Hello again"
-
-	remoteIp := m.App.Session.GetString(r.Context(), "remote_ip")
-	stringMap["remote_ip"] = remoteIp
-
-	td := models.TemplateData{
-		StringMap: stringMap,
-	}
-	render.RenderTemplate(w, r, "about.page.tmpl", &td)
+	render.RenderTemplate(w, r, "about.page.tmpl", &models.TemplateData{})
 
 }
 
@@ -87,9 +76,10 @@ func (m *Repository) AvailabilityJson(w http.ResponseWriter, r *http.Request) {
 		Message: "Available",
 	}
 	if out, err := json.MarshalIndent(resp, "", ""); err == nil {
-		fmt.Println(string(out))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(out)
+	} else {
+		helpers.ServerError(w, err)
 	}
 
 }
@@ -107,8 +97,9 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 // Post Reservation
 func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
+	//err := errors.New("checkeing helper functions")
 	if err != nil {
-		log.Println("Error Parsing form posrReservation", err)
+		helpers.ServerError(w, err)
 		return
 	}
 
@@ -124,7 +115,7 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	form := forms.New(r.PostForm)
 
 	form.Required(fields[:3]...)
-	form.MinimumLength(fields[0], 3, r)
+	form.MinimumLength(fields[0], 3)
 	form.IsEmail(fields[2])
 
 	if !form.Valid() {
@@ -148,6 +139,7 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
 		log.Println("Cannot get data from session")
+		m.App.ErrorLog.Println("cn't get reservation from session")
 		m.App.Session.Put(r.Context(), "ttttt", "Cannot get reservation from session")
 		m.App.Session.Put(r.Context(), "warning", "Cannot get reservation from session")
 		//m.App.Session.Put(r.Context(), "error", "Cannot get reservation from session")

@@ -1,0 +1,17 @@
+mode: set
+github.com/msavanan/bookings/internal/forms/errors.go:6.44,8.2 1 1
+github.com/msavanan/bookings/internal/forms/errors.go:11.42,13.18 2 1
+github.com/msavanan/bookings/internal/forms/errors.go:13.18,15.3 1 1
+github.com/msavanan/bookings/internal/forms/errors.go:17.2,17.14 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:16.29,18.2 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:21.33,26.2 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:28.39,31.13 2 1
+github.com/msavanan/bookings/internal/forms/forms.go:31.13,33.3 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:35.2,35.13 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:40.43,41.31 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:41.31,43.37 2 1
+github.com/msavanan/bookings/internal/forms/forms.go:43.37,45.4 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:50.56,53.25 2 1
+github.com/msavanan/bookings/internal/forms/forms.go:53.25,55.3 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:60.38,61.40 1 1
+github.com/msavanan/bookings/internal/forms/forms.go:61.40,63.3 1 1
