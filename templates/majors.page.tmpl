@@ -36,14 +36,12 @@
 
 {{define "js"}}
 <script>
-const elem_btn = document.getElementById("check-availability-button")
-elem_btn.addEventListener("click", function(){
+document.getElementById("check-availability-button").addEventListener("click", function(){
   //notify("Helllo", "success")
   // notifyModal("This is a title", "<em>This is HTML</em>", "error", "yes")
  // attention.toast({msg:"Helllo this is a message", icon:"error"})
  //attention.success({msg:"OOPs....",title: "This is title"})
  //attention.error({msg:"OOPs....",title: "This is title"})
-
 
  let html =`
  <form id="check-availability-form" action="" method="POST" novalidate class="needs-validations">
@@ -54,27 +52,71 @@ elem_btn.addEventListener("click", function(){
             <input disabled required class="form-control" type="text" name="start" id="start" placeholder="Arrival">
           </div>
           <div class="col">
-            <input disabled required class="form-control" type="text" name="start" id="end" placeholder="Departure">
+            <input disabled required class="form-control" type="text" name="end" id="end" placeholder="Departure">
           </div>
         </div>
       </div>
     </div>
  `
 
- attention.custom({title: "Choose your Dates",
-  msg: html,
-  willOpen: function(){
+ 
+        attention.custom({
+          title: "Choose your Dates", 
+          msg: html,
+          willOpen: function(){
            const elem = document.getElementById("reservation-dates-modal")
            const rp = new DateRangePicker(elem,{
               format:"yyyy-mm-dd",
               showOnFocus:true,
+              minDate: new Date(),
             })
           },
-  didOpen: function(){
-  document.getElementById("start").removeAttribute("disabled")
-  document.getElementById("end").removeAttribute("disabled")
-  },
-  });
+          didOpen: function(){
+          document.getElementById("start").removeAttribute("disabled")
+          document.getElementById("end").removeAttribute("disabled")
+          },
+          callback: function(result){
+          let form = document.getElementById("check-availability-form")
+     let formData = new FormData(form)
+     formData.append("csrf_token", "{{.CSRFToken}}");
+     formData.append("room_id", "2");
+
+            fetch("/search-availability-json", {
+              method: "post",
+              body: formData
+            })
+            .then(response => response.json())
+            .then(data =>{
+            if (data.ok){
+            console.log("room is available")
+            attention.custom({
+                icon: "success",
+                showConfirmButton: false,
+                msg:'<p>Room is available</p>' 
+                + '<p><a href="/book-room?id='
+                + data.room_id
+                + '&s='
+                + data.start_date
+                + '&e='
+                + data.end_date
+                +' "class="btn btn-primary">'
+                + 'Book Now!</a></p>'
+                
+                 ,
+
+            })
+
+            }else{
+            console.log("room is not available")
+            attention.error({
+            msg: "No room Available",
+            })
+            }
+            //console.log(data.ok)
+            //console.log(data.message)
+            })
+          }
+        });
 });
 </script>
 {{end}}
