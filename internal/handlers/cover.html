@@ -1,0 +1,488 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>handlers: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/msavanan/bookings/internal/handlers/handlers.go (39.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package handlers
+
+import (
+        "encoding/json"
+        "errors"
+        "log"
+        "net/http"
+        "strconv"
+        "time"
+
+        "github.com/go-chi/chi/v5"
+        "github.com/msavanan/bookings/internal/config"
+        "github.com/msavanan/bookings/internal/driver"
+        "github.com/msavanan/bookings/internal/forms"
+        "github.com/msavanan/bookings/internal/helpers"
+        "github.com/msavanan/bookings/internal/models"
+        "github.com/msavanan/bookings/internal/render"
+        "github.com/msavanan/bookings/internal/repository"
+        "github.com/msavanan/bookings/internal/repository/dbrepo"
+)
+
+var Repo *Repository
+
+// Repository pattern
+type Repository struct {
+        App *config.AppConfig
+        DB  repository.DatabaseRepo
+}
+
+func NewRepo(a *config.AppConfig, db *driver.DB) *Repository <span class="cov0" title="0">{
+        return &amp;Repository{
+                App: a,
+                DB:  dbrepo.NewPostgresRepo(db.SQL, a),
+        }
+}</span>
+
+// For Testing only
+func NewTestRepo(a *config.AppConfig) *Repository <span class="cov8" title="1">{
+        return &amp;Repository{
+                App: a,
+                DB:  dbrepo.NewTestPostgresRepo(a),
+        }
+}</span>
+
+func NewHandlers(r *Repository) <span class="cov8" title="1">{
+        Repo = r
+}</span>
+
+func (m *Repository) Home(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "home.page.tmpl", &amp;models.TemplateData{})
+
+}</span>
+
+func (m *Repository) About(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "about.page.tmpl", &amp;models.TemplateData{})
+
+}</span>
+
+func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "contact.page.tmpl", &amp;models.TemplateData{})
+}</span>
+
+func (m *Repository) Generals(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "generals.page.tmpl", &amp;models.TemplateData{})
+}</span>
+
+func (m *Repository) Majors(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "majors.page.tmpl", &amp;models.TemplateData{})
+}</span>
+
+// GET service Availablity
+func (m *Repository) Availability(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "search-availability.page.tmpl", &amp;models.TemplateData{})
+}</span>
+
+// POST service Availablity
+func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        start := r.Form.Get("start")
+        end := r.Form.Get("end")
+
+        layout := "2006-01-02"
+        startDate, err := time.Parse(layout, start)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">endDate, err := time.Parse(layout, end)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">rooms, err := m.DB.SearchAvailabilityForAllRooms(startDate, endDate)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">if len(rooms) == 0 </span><span class="cov0" title="0">{
+                // No Availabilty
+                m.App.InfoLog.Println("No Availability")
+                m.App.Session.Put(r.Context(), "error", "No Availability")
+                http.Redirect(w, r, "/search-availability", http.StatusSeeOther)
+        }</span>
+
+        <span class="cov0" title="0">var data = make(map[string]interface{})
+        data["rooms"] = rooms
+
+        res := models.Reservation{
+                StartDate: startDate,
+                EndDate:   endDate,
+        }
+
+        m.App.Session.Put(r.Context(), "reservation", res)
+
+        render.Template(w, r, "choose_room.page.tmpl", &amp;models.TemplateData{
+                Form: forms.New(nil),
+                Data: data,
+        })
+
+        for _, room := range rooms </span><span class="cov0" title="0">{
+                m.App.InfoLog.Println("ROOM: ", room.ID, room.RoomName)
+        }</span>
+
+        //w.Write([]byte(fmt.Sprintf("Posted to search Availability \n start date: %s, end date: %s", start, end)))
+}
+
+type JsonResponse struct {
+        Ok        bool   `json:"ok"`
+        Message   string `json:"message"`
+        RoomId    string `json:"room_id"`
+        StartDate string `json:"start_date"`
+        EndDate   string `json:"end_date"`
+}
+
+// service Availablity-json
+func (m *Repository) AvailabilityJson(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        sd := r.Form.Get("start")
+        ed := r.Form.Get("end")
+
+        roomId, err := strconv.Atoi(r.Form.Get("room_id"))
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov0" title="0">layout := "2006-01-02"
+        startDate, err := time.Parse(layout, sd)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov0" title="0">endDate, err := time.Parse(layout, ed)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov0" title="0">available, err := m.DB.SearchAvailabilityByDateByRoomId(startDate, endDate, roomId)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov0" title="0">log.Println("available.............", available)
+
+        resp := JsonResponse{
+                Ok: available,
+                //Message: "",
+                StartDate: sd,
+                EndDate:   ed,
+                RoomId:    strconv.Itoa(roomId),
+        }
+        if out, err := json.MarshalIndent(resp, "", ""); err == nil </span><span class="cov0" title="0">{
+                w.Header().Set("Content-Type", "application/json")
+                w.Write(out)
+        }</span> else<span class="cov0" title="0"> {
+                helpers.ServerError(w, err)
+        }</span>
+
+}
+
+// Get Reservation
+func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        res, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+        if !ok </span><span class="cov8" title="1">{
+                // helpers.ServerError(w, errors.New("type assertion to models.reservation failed"))
+                // return
+                m.App.Session.Put(r.Context(), "error", "Can't get reservation form session")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov8" title="1">room, err := m.DB.GetRoomById(res.RoomId)
+        if err != nil </span><span class="cov8" title="1">{
+                // helpers.ServerError(w, err)
+                // return
+
+                m.App.Session.Put(r.Context(), "error", "Can't find room")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov8" title="1">res.Room.RoomName = room.RoomName
+
+        m.App.Session.Put(r.Context(), "reservation", res)
+
+        sd := res.StartDate.Format("2006-01-02")
+        ed := res.EndDate.Format("2006-01-02")
+
+        stringMap := make(map[string]string)
+        stringMap["start_date"] = sd
+        stringMap["end_date"] = ed
+
+        data := make(map[string]interface{})
+        data["reservation"] = res
+        render.Template(w, r, "make-reservation.page.tmpl", &amp;models.TemplateData{
+                Form:      forms.New(nil),
+                Data:      data,
+                StringMap: stringMap,
+        })</span>
+}
+
+// Post Reservation
+func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        err := r.ParseForm()
+        if err != nil </span><span class="cov8" title="1">{
+                // helpers.ServerError(w, err)
+                // return
+                m.App.Session.Put(r.Context(), "error", "Can't parse form")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov8" title="1">reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+        if !ok </span><span class="cov8" title="1">{
+                //helpers.ServerError(w, errors.New("type assertion to string failed"))
+                m.App.Session.Put(r.Context(), "error", "Can't find reservation in session data")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fields := [4]string{"first_name", "last_name", "email", "phone"}
+
+        reservation.FirstName = r.Form.Get(fields[0])
+        reservation.LastName = r.Form.Get(fields[1])
+        reservation.Email = r.Form.Get(fields[2])
+        reservation.Phone = r.Form.Get(fields[3])
+        
+
+        form := forms.New(r.PostForm)
+
+        form.Required(fields[:3]...)
+        form.MinimumLength(fields[0], 3)
+        form.IsEmail(fields[2])
+
+        if !form.Valid() </span><span class="cov8" title="1">{
+                data := make(map[string]interface{})
+                data["reservation"] = reservation
+
+                render.Template(w, r, "make-reservation.page.tmpl", &amp;models.TemplateData{
+                        Form: form,
+                        Data: data,
+                })
+                return
+
+        }</span>
+
+        <span class="cov8" title="1">newReservationId, err := m.DB.InsertReservations(reservation)
+
+        if err != nil </span><span class="cov8" title="1">{
+                // helpers.ServerError(w, err)
+                // return
+                m.App.Session.Put(r.Context(), "error", "Can't find reservation id")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov8" title="1">restrictions := models.RoomRestriction{
+                StartDate:     reservation.StartDate,
+                EndDate:       reservation.EndDate,
+                RoomId:        reservation.RoomId,
+                ReservationId: newReservationId,
+                RestrictionId: 1,
+        }
+
+        err = m.DB.InsertRoomRestrictions(restrictions)
+        if err != nil </span><span class="cov8" title="1">{
+                // helpers.ServerError(w, err)
+                // return
+                m.App.Session.Put(r.Context(), "error", "Can't find restriction id")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov0" title="0">m.App.Session.Put(r.Context(), "reservation", reservation)
+        http.Redirect(w, r, "/reservation-summary", http.StatusSeeOther)</span>
+
+}
+
+func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+        if !ok </span><span class="cov0" title="0">{
+                log.Println("Cannot get data from session")
+                m.App.ErrorLog.Println("cn't get reservation from session")
+                m.App.Session.Put(r.Context(), "ttttt", "Cannot get reservation from session")
+                m.App.Session.Put(r.Context(), "warning", "Cannot get reservation from session")
+                //m.App.Session.Put(r.Context(), "error", "Cannot get reservation from session")
+                http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+                return
+        }</span>
+
+        <span class="cov0" title="0">m.App.Session.Remove(r.Context(), "reservation")
+
+        data := make(map[string]interface{})
+        data["reservation"] = reservation
+
+        sd := reservation.StartDate.Format("2006-01-02")
+        ed := reservation.EndDate.Format("2006-01-02")
+
+        stringMap := make(map[string]string)
+        stringMap["start_date"] = sd
+        stringMap["end_date"] = ed
+
+        render.Template(w, r, "reservation-summary.page.tmpl", &amp;models.TemplateData{
+                Data:      data,
+                StringMap: stringMap,
+        })</span>
+
+}
+
+func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+
+        roomId, err := strconv.Atoi(chi.URLParam(r, "id"))
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">res, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+        if !ok </span><span class="cov0" title="0">{
+                helpers.ServerError(w, errors.New("type assertion to models.reservation failed"))
+                return
+        }</span>
+
+        <span class="cov0" title="0">res.RoomId = roomId
+
+        m.App.Session.Put(r.Context(), "reservation", res)
+
+        http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)</span>
+
+}
+
+func (m *Repository) BookRoom(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        id, err := strconv.Atoi(r.URL.Query().Get("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+        <span class="cov0" title="0">sd := r.URL.Query().Get("s")
+        ed := r.URL.Query().Get("e")
+
+        var res models.Reservation
+
+        res.RoomId = id
+
+        room, err := m.DB.GetRoomById(res.RoomId)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">res.Room.RoomName = room.RoomName
+
+        res.StartDate, err = time.Parse("2006-01-02", sd)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov0" title="0">res.EndDate, err = time.Parse("2006-01-02", ed)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov0" title="0">m.App.Session.Put(r.Context(), "reservation", res)
+
+        http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)</span>
+
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
