@@ -30,6 +30,20 @@ func main() {
 	}
 
 	defer db.SQL.Close()
+	defer close(app.MailChan)
+
+	log.Println("Listening for email......")
+	listenForMail()
+
+	// log.Println("starting to send email.......")
+	// from := "me@here.com"
+	// auth := smtp.PlainAuth("", from, "", "localhost")
+	// err = smtp.SendMail("localhost:1025", auth, from, []string{"yo@there.com"}, []byte("Hello World!"))
+	// if err != nil {
+	// 	log.Println("failed to sent email via smtp package ", err)
+	// } else {
+	// 	log.Println("Sent email successfully...")
+	// }
 
 	log.Println("Starting server at port:", port)
 	//http.ListenAndServe(port, nil)
@@ -53,6 +67,10 @@ func run() (*driver.DB, error) {
 	gob.Register(models.Restriction{})
 	//gob.Register(models.RoomRestriction{})
 	gob.Register(models.Room{})
+
+	mailchan := make(chan models.MailData)
+
+	app.MailChan = mailchan
 
 	app.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)

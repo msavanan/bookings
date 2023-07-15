@@ -2,9 +2,11 @@ package dbrepo
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/msavanan/bookings/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (m *postgresDBRepo) AllUsers() bool {
@@ -149,4 +151,73 @@ func (m *postgresDBRepo) GetRoomById(id int) (models.Room, error) {
 
 	return room, nil
 
+}
+
+func (m *postgresDBRepo) GetUserById(id int) (models.User, error) {
+	var u models.User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var err = error(nil)
+
+	query := `SELECT id, first_name, last_name, email, password, access_level, created_at, updated_at 
+	FROM users
+	WHERE id = $1
+	`
+	row := m.DB.QueryRowContext(ctx, query, id)
+	err = row.Scan(
+		&u.Id,
+		&u.FirstName,
+		&u.LastName,
+		&u.Email,
+		&u.Password,
+		&u.AccessLevel,
+		&u.CreatedAt,
+		&u.UpdatedAt)
+
+	return u, err
+}
+
+func (m *postgresDBRepo) UpdateUser(u models.User) error {
+	var err = error(nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `UPDATE users set id = $1, first_name = $2, last_name = $3, email = $4, access_level = $5, updated_at = $6 
+	FROM user`
+
+	_, err = m.DB.ExecContext(ctx, query, u.Id, u.FirstName, u.LastName, u.Email, u.AccessLevel, time.Now())
+
+	return err
+
+}
+
+func (m *postgresDBRepo) Authenticate(email, testPassword string) (int, string, error) {
+
+	var id int
+	var hashedPassword string
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `SELECT id, password 
+	FROM users 
+	WHERE email = $1`
+
+	row := m.DB.QueryRowContext(ctx, query, email)
+	err := row.Scan(&id, &hashedPassword)
+	if err != nil {
+		return id, "", err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(testPassword))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return 0, "", errors.New("incorrect password")
+	} else if err != nil {
+		return id, "", err
+	}
+
+	return id, hashedPassword, err
 }
