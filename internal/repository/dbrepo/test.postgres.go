@@ -65,3 +65,33 @@ func (m *postgresTestDBRepo) UpdateUser(u models.User) error {
 func (m *postgresTestDBRepo) Authenticate(email, testPassword string) (int, string, error) {
 	return 1, "", nil
 }
+
+func (m *postgresTestDBRepo) AllReservations() ([]models.Reservation, error) {
+	var reservations []models.Reservation
+
+	return reservations, nil
+}
+
+func (m *postgresTestDBRepo) AllNewReservations() ([]models.Reservation, error) {
+	var reservations []models.Reservation
+
+	return reservations, nil
+}
+
+func (m *postgresTestDBRepo) GetReservationById(id int) (models.Reservation, error) {
+	var res models.Reservation
+	return res, nil
+
+}
+
+func (m *postgresTestDBRepo) UpdateReservation(u models.Reservation) error {
+	return nil
+}
+
+func (m *postgresTestDBRepo) DeleteReservation(id int) error {
+	return nil
+}
+
+func (m *postgresTestDBRepo) UpdateProcessedForReservation(id, processed int) error {
+	return nil
+}

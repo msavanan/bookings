@@ -8,79 +8,25 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/justinas/nosurf"
 	"github.com/msavanan/bookings/internal/config"
 	"github.com/msavanan/bookings/internal/models"
 )
 
-// func RenderTest(w http.ResponseWriter, templ string) {
-
-// 	parsedFiles, err := template.ParseFiles(filepath.Join("../../templates", templ),
-// 		filepath.Join("../../templates", "base.layout.tmpl"))
-// 	if err != nil {
-// 		log.Println("error failed to parse the template file", err)
-// 	}
-
-// 	if err = parsedFiles.Execute(w, nil); err != nil {
-// 		log.Println(err.Error())
-// 	}
-
-// }
-
-// var tc = make(map[string]*template.Template)
-
-// func RenderMethod2(w http.ResponseWriter, t string) {
-// 	var tmpl *template.Template
-// 	var err error
-
-// 	_, inMap := tc[t]
-
-// 	if !inMap {
-// 		log.Println("Create templates......")
-
-// 		err = createTemplate(t)
-// 		if err != nil {
-// 			log.Println("error failed to parse the template file", err)
-// 		}
-
-// 	} else {
-
-// 		log.Println("Cached templates......")
-
-// 	}
-
-// 	tmpl = tc[t]
-
-// 	err = tmpl.Execute(w, nil)
-// 	if err != nil {
-// 		log.Println("error failed to execute template file", err.Error())
-// 	}
-
-// }
-
-// func createTemplate(t string) error {
-// 	//When running from the root directory
-// 	// go run cmd/web/main.go
-// 	templates := []string{filepath.Join("templates", t),
-// 		filepath.Join("templates", "base.layout.tmpl")}
-// 	//When running from the cmd/web directory, directory where main file exist
-// 	// go run cmd/web/main.go
-// 	// templates := []string{filepath.Join("../../templates", t),
-// 	// 	filepath.Join("../../templates", "base.layout.tmpl")}
-// 	parsedFiles, err := template.ParseFiles(templates...)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	tc[t] = parsedFiles
-
-// 	return nil
-// }
+var functions = template.FuncMap{
+	"humanDate": HumanDate,
+}
 
 var app *config.AppConfig
 
 var pathToTemplates = "./templates"
+
+// returns time in YYYY-MM-DD format
+func HumanDate(t time.Time) string {
+	return t.Format("2006-01-02")
+}
 
 func NewRenderer(a *config.AppConfig) {
 	app = a
@@ -154,7 +100,7 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 	for _, page := range pages {
 		name := filepath.Base(page)
 
-		ts, err := template.New(name).ParseFiles(page)
+		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
 		if err != nil {
 			return cache, err
 		}
