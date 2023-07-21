@@ -16,13 +16,29 @@ import (
 )
 
 var functions = template.FuncMap{
-	"humanDate": HumanDate,
+	"humanDate":  HumanDate,
 	"formatDate": FormatDate,
+	"iterate":    iterate,
+	"add":        add,
 }
 
 var app *config.AppConfig
 
 var pathToTemplates = "./templates"
+
+func add(a, b int) int {
+	return a + b
+}
+
+func iterate(count int) []int {
+	var i int
+	var items []int
+	for i = 0; i < count; i++ {
+		items = append(items, i)
+	}
+
+	return items
+}
 
 // returns time in YYYY-MM-DD format
 func HumanDate(t time.Time) string {

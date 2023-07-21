@@ -411,3 +411,94 @@ func (m *postgresDBRepo) UpdateProcessedForReservation(id, processed int) error 
 	return nil
 
 }
+
+func (m *postgresDBRepo) AllRooms() ([]models.Room, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var rooms []models.Room
+
+	query := `SELECT id, room_name, created_at, updated_at FROM rooms ORDER BY room_name`
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return rooms, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var room models.Room
+		err := rows.Scan(
+			&room.ID, &room.RoomName, &room.CreatedAt, &room.UpdatedAt)
+		if err != nil {
+			return []models.Room{}, err
+		}
+
+		rooms = append(rooms, room)
+
+	}
+
+	if err := rows.Err(); err != nil {
+		return []models.Room{}, err
+	}
+
+	return rooms, err
+}
+
+func (m *postgresDBRepo) GetRestrictionForRoomByDate(roomId int, start, end time.Time) ([]models.RoomRestriction, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var roomRestritions []models.RoomRestriction
+
+	query := `SELECT id, start_date, end_date, room_id, coalesce(reservation_id, 0), restriction_id 
+			  FROM room_restrictions WHERE $1 < end_date AND $2 >= start_date
+			  AND room_id = $3`
+
+	rows, err := m.DB.QueryContext(ctx, query, start, end, roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var rr models.RoomRestriction
+
+		err := rows.Scan(
+			&rr.Id,
+			&rr.StartDate,
+			&rr.EndDate,
+			&rr.RoomId,
+			&rr.ReservationId,
+			&rr.RestrictionId,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		roomRestritions = append(roomRestritions, rr)
+
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return roomRestritions, err
+
+}
+
+// Id            int
+// StartDate     time.Time
+// EndDate       time.Time
+// RoomId        int
+// ReservationId int
+// RestrictionId int
+// CreatedAt     time.Time
+// UpdatedAt     time.Time
+// Room          Room
+// Reservation   Reservation
+// Restrictions  Restriction

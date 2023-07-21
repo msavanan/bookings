@@ -95,3 +95,13 @@ func (m *postgresTestDBRepo) DeleteReservation(id int) error {
 func (m *postgresTestDBRepo) UpdateProcessedForReservation(id, processed int) error {
 	return nil
 }
+
+func (m *postgresTestDBRepo) AllRooms() ([]models.Room, error) {
+	return []models.Room{}, nil
+}
+
+func (m *postgresTestDBRepo) GetRestrictionForRoomByDate(roomId int, start, end time.Time) ([]models.RoomRestriction, error) {
+	var roomRestritions []models.RoomRestriction
+
+	return roomRestritions, nil
+}
