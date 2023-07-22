@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/gob"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -69,6 +71,23 @@ func run() (*driver.DB, error) {
 	gob.Register(models.Room{})
 	gob.Register(map[string]int{})
 
+	//Flags
+	inProduction := flag.Bool("production", true, "Application in production")
+	useCache := flag.Bool("cache", true, "use template cache")
+	dbHost := flag.String("dbhost", "", "Database host")
+	dbName := flag.String("dbname", "", "Database name")
+	dbUser := flag.String("dbuser", "", "Database user")
+	dbPass := flag.String("dbpass", "", "Database password")
+	dbPort := flag.String("dbport", "5432", "Database port")
+	dbSSL := flag.String("dbssl", "disable", "Database ssl settings(disable, prefer, require)")
+
+	flag.Parse()
+
+	if *dbName == "" || *dbUser == "" {
+		fmt.Println("Missing required flags")
+		os.Exit(1)
+	}
+
 	mailchan := make(chan models.MailData)
 
 	app.MailChan = mailchan
@@ -76,7 +95,7 @@ func run() (*driver.DB, error) {
 	app.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	app.InProduction = false
+	app.InProduction = *inProduction
 
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
@@ -87,7 +106,8 @@ func run() (*driver.DB, error) {
 	app.Session = session
 
 	log.Println("Connecting to database....")
-	db, err := driver.ConnectSQL("host=localhost port=5432 dbname=bookings user=postgres password=12345678")
+	connectionString := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s", *dbHost, *dbPort, *dbName, *dbUser, *dbPass, *dbSSL)
+	db, err := driver.ConnectSQL(connectionString)
 	if err != nil {
 		log.Fatal("Can't connect to database")
 		return nil, err
@@ -100,7 +120,7 @@ func run() (*driver.DB, error) {
 	}
 
 	app.TemplateCache = tc
-	app.UseCache = app.InProduction //false
+	app.UseCache = *useCache
 
 	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
