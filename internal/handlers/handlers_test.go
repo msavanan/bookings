@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -30,6 +31,15 @@ var theTest = []struct {
 	{"major", "/majors-suite", "GET", http.StatusOK},
 	{"sa", "/search-availability", "GET", http.StatusOK},
 	{"contact", "/contact", "GET", http.StatusOK},
+	{"non-existent", "/green/eggs/hams", "GET", http.StatusNotFound},
+
+	//New Routes
+	{"login", "/user/login", "GET", http.StatusOK},
+	{"logout", "/user/logout", "GET", http.StatusOK},
+	{"dashboard", "/admin/dashboard", "GET", http.StatusOK},
+	{"new res", "/admin/reservations-new", "GET", http.StatusOK},
+	{"new all", "/admin/reservations-all", "GET", http.StatusOK},
+	{"show res", "/admin/reservations/new/1/show", "GET", http.StatusOK},
 
 	// {"post-sa", "/search-availability", "POST", []postData{
 	// 	{key: "start", value: "2023-11-09"},
@@ -301,6 +311,76 @@ func TestRpository_Reservation(t *testing.T) {
 
 	if rr.Code != http.StatusTemporaryRedirect {
 		t.Errorf("Reservation handler returned wrong response code: got %d wanted %d", rr.Code, http.StatusOK)
+	}
+
+}
+
+var loginTest = []struct {
+	name               string
+	email              string
+	expectedStatusCode int
+	expectedHtml       string
+	expectedLocation   string
+}{
+	{
+		"valid-credentials",
+		"me@here.ca",
+		http.StatusSeeOther,
+		"",
+		"/",
+	},
+	{
+		"invalid-credentials",
+		"jack@nimble.com",
+		http.StatusSeeOther,
+		"",
+		"/user/login",
+	},
+
+	{
+		"invalid-credentials",
+		"j",
+		http.StatusOK,
+		`action="user/login"`,
+		"",
+	},
+}
+
+func TestLogin(t *testing.T) {
+	for _, e := range loginTest {
+		postedData := url.Values{}
+		postedData.Add("email", e.email)
+		postedData.Add("password", "password")
+
+		req, _ := http.NewRequest("POST", "/user/login", strings.NewReader(postedData.Encode()))
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(Repo.PostShowLogin)
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != e.expectedStatusCode {
+			t.Errorf("failed %s expected code %d but code %d", e.name, e.expectedStatusCode, rr.Code)
+		}
+
+		if e.expectedLocation != "" {
+			actualLocation, _ := rr.Result().Location()
+
+			if actualLocation.String() != e.expectedLocation {
+				t.Errorf("failed %s expected location %s but location %s", e.name, e.expectedLocation, actualLocation.String())
+			}
+		}
+
+		if e.expectedLocation != "" {
+			html := rr.Body.String()
+			if !strings.Contains(html, e.expectedHtml) {
+				t.Errorf("failed %s expected html %s but got html %s", e.name, e.expectedHtml, html)
+			}
+		}
+
 	}
 
 }

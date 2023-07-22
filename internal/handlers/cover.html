@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/msavanan/bookings/internal/handlers/handlers.go (39.1%)</option>
+				<option value="file0">github.com/msavanan/bookings/internal/handlers/handlers.go (31.8%)</option>
 				
 				</select>
 			</div>
@@ -74,9 +74,11 @@
 import (
         "encoding/json"
         "errors"
+        "fmt"
         "log"
         "net/http"
         "strconv"
+        "strings"
         "time"
 
         "github.com/go-chi/chi/v5"
@@ -314,7 +316,6 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) <sp
         reservation.LastName = r.Form.Get(fields[1])
         reservation.Email = r.Form.Get(fields[2])
         reservation.Phone = r.Form.Get(fields[3])
-        
 
         form := forms.New(r.PostForm)
 
@@ -361,7 +362,43 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) <sp
                 return
         }</span>
 
-        <span class="cov0" title="0">m.App.Session.Put(r.Context(), "reservation", reservation)
+        // Send Mail - First to the user
+        <span class="cov0" title="0">htmlMessage := fmt.Sprintf(`
+        &lt;strong&gt;Reservation Confirmation&lt;/strong&gt;&lt;br&gt;
+        Dear %s, &lt;br&gt;
+        This confirm the reservation for %s rooms from %s to %s
+        `, reservation.FirstName, reservation.Room.RoomName, reservation.StartDate.Format("2006-01-02"), reservation.EndDate.Format("2006-01-02"))
+
+        msg := models.MailData{
+                To:       reservation.Email,
+                From:     "me@here.com",
+                Subject:  "Reservation Confirmation",
+                Content:  htmlMessage,
+                Template: "basic.html",
+        }
+
+        m.App.MailChan &lt;- msg
+
+        //Send Mail - Property  Owner
+        htmlMessage = fmt.Sprintf(`
+        &lt;strong&gt;Reservation Notification&lt;/strong&gt;&lt;br&gt;
+        Details of reservation &lt;br&gt;
+        Room Name     : %s &lt;br&gt; 
+        Arrival Date  : %s &lt;br&gt; 
+        Departure Date: %s &lt;br&gt;
+        `, reservation.Room.RoomName, reservation.StartDate.Format("2006-01-02"), reservation.EndDate.Format("2006-01-02"))
+
+        msg = models.MailData{
+                To:       "me@here.com",
+                From:     "me@here.com",
+                Subject:  "Reservation Notification",
+                Content:  htmlMessage,
+                Template: "basic.html",
+        }
+
+        m.App.MailChan &lt;- msg
+
+        m.App.Session.Put(r.Context(), "reservation", reservation)
         http.Redirect(w, r, "/reservation-summary", http.StatusSeeOther)</span>
 
 }
@@ -453,6 +490,373 @@ func (m *Repository) BookRoom(w http.ResponseWriter, r *http.Request) <span clas
 
         http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)</span>
 
+}
+
+func (m *Repository) ShowLogin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "login.page.tmpl", &amp;models.TemplateData{
+                Form: forms.New(nil),
+        })
+
+}</span>
+
+func (m *Repository) PostShowLogin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        //Sesion fixation attack
+        err := m.App.Session.RenewToken(r.Context())
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+        }</span>
+
+        <span class="cov8" title="1">err = r.ParseForm()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Println(err)
+        }</span>
+
+        <span class="cov8" title="1">form := forms.New(r.PostForm)
+        email := r.Form.Get("email")
+        password := r.Form.Get("password")
+
+        form.Required("email", "password")
+        form.IsEmail("email")
+
+        if !form.Valid() </span><span class="cov8" title="1">{
+                render.Template(w, r, "login.page.tmpl", &amp;models.TemplateData{
+                        Form: form,
+                })
+                return
+        }</span>
+
+        <span class="cov8" title="1">id, _, err := m.DB.Authenticate(email, password)
+        if err != nil </span><span class="cov8" title="1">{
+                log.Println(err)
+                m.App.Session.Put(r.Context(), "error", "Invalid login credentials")
+                http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+                return
+        }</span>
+
+        <span class="cov8" title="1">m.App.Session.Put(r.Context(), "user_id", id)
+        m.App.Session.Put(r.Context(), "flash", "Logged in successfully")
+
+        http.Redirect(w, r, "/", http.StatusSeeOther)</span>
+
+}
+
+func (m Repository) Logout(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        _ = m.App.Session.Destroy(r.Context())
+        _ = m.App.Session.RenewToken(r.Context())
+        http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+}</span>
+
+func (m *Repository) AdminDashboard(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        render.Template(w, r, "admin-dashboard.page.tmpl", &amp;models.TemplateData{})
+}</span>
+
+func (m *Repository) AdminReservationsAll(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        reservations, err := m.DB.AllReservations()
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">data := make(map[string]interface{})
+        data["reservations"] = reservations
+
+        render.Template(w, r, "admin-reservations-all.page.tmpl", &amp;models.TemplateData{
+                Data: data,
+        })</span>
+}
+
+func (m *Repository) AdminReservationsNew(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        reservations, err := m.DB.AllNewReservations()
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">data := make(map[string]interface{})
+        data["reservations"] = reservations
+        render.Template(w, r, "admin-reservations-new.page.tmpl", &amp;models.TemplateData{
+                Data: data,
+        })</span>
+}
+
+func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        explode := strings.Split(r.RequestURI, "/")
+        src := explode[3]
+        id, err := strconv.Atoi(explode[4])
+        if err != nil </span><span class="cov0" title="0">{
+                log.Println(err)
+        }</span>
+
+        <span class="cov8" title="1">stringMap := make(map[string]string)
+        stringMap["src"] = src
+
+        year := r.URL.Query().Get("y")
+        month := r.URL.Query().Get("m")
+
+        stringMap["year"] = year
+        stringMap["month"] = month
+
+        reservation, err := m.DB.GetReservationById(id)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">data := make(map[string]interface{})
+        data["reservation"] = reservation
+
+        render.Template(w, r, "admin-reservations-show.page.tmpl", &amp;models.TemplateData{
+                Data:      data,
+                StringMap: stringMap,
+                Form:      forms.New(nil),
+        })</span>
+}
+
+func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        err := r.ParseForm()
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">explode := strings.Split(r.RequestURI, "/")
+        src := explode[3]
+        id, err := strconv.Atoi(explode[4])
+        if err != nil </span><span class="cov0" title="0">{
+                log.Println(err)
+        }</span>
+
+        <span class="cov0" title="0">var reservation models.Reservation
+
+        reservation.Id = id
+        reservation.FirstName = r.Form.Get("first_name")
+        reservation.LastName = r.Form.Get("last_name")
+        reservation.Email = r.Form.Get("email")
+        reservation.Phone = r.Form.Get("phone")
+
+        err = m.DB.UpdateReservation(reservation)
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">month := r.Form.Get("month")
+        year := r.Form.Get("year")
+
+        m.App.Session.Put(r.Context(), "flash", "Changes saved")
+
+        if year == "" </span><span class="cov0" title="0">{
+                http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+        }</span> else<span class="cov0" title="0"> {
+                http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&amp;m=%s", year, month), http.StatusSeeOther)
+
+        }</span>
+
+}
+
+func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        now := time.Now()
+
+        if r.URL.Query().Get("y") != "" </span><span class="cov0" title="0">{
+                year, err := strconv.Atoi(r.URL.Query().Get("y"))
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Println("Failed to query year")
+                }</span>
+                <span class="cov0" title="0">month, err := strconv.Atoi(r.URL.Query().Get("m"))
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Println("Failed to query month")
+                }</span>
+
+                <span class="cov0" title="0">now = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)</span>
+        }
+
+        <span class="cov0" title="0">next := now.AddDate(0, 1, 0)
+        last := now.AddDate(0, -1, 0)
+
+        nextMonth := next.Format("1")
+        nextMonthYear := next.Format("2006")
+
+        lastMonth := last.Format("1")
+        lastMonthYear := last.Format("2006")
+
+        data := make(map[string]interface{})
+        data["now"] = now
+
+        stringMap := make(map[string]string)
+        stringMap["next_month"] = nextMonth
+        stringMap["last_month"] = lastMonth
+        stringMap["next_year"] = nextMonthYear
+        stringMap["last_year"] = lastMonthYear
+
+        stringMap["this_month"] = now.Format("01")
+        stringMap["this_month_year"] = now.Format("2006")
+
+        currentYear, currentMonth, _ := now.Date()
+        currentLocation := now.Location()
+        firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+        lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+
+        intMap := make(map[string]int)
+        intMap["day_in_month"] = lastOfMonth.Day()
+
+        rooms, err := m.DB.AllRooms()
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">data["rooms"] = rooms
+
+        for _, x := range rooms </span><span class="cov0" title="0">{
+                reservationMap := make(map[string]int)
+                blockMap := make(map[string]int)
+
+                for d := firstOfMonth; !d.After(lastOfMonth); d = d.AddDate(0, 0, 1) </span><span class="cov0" title="0">{
+                        reservationMap[d.Format("2006-01-2")] = 0
+                        blockMap[d.Format("2006-01-2")] = 0
+                }</span>
+
+                <span class="cov0" title="0">restrictions, err := m.DB.GetRestrictionForRoomByDate(x.ID, firstOfMonth, lastOfMonth)
+                if err != nil </span><span class="cov0" title="0">{
+                        helpers.ServerError(w, err)
+                }</span>
+
+                // fmt.Println("restrictions============")
+                // fmt.Println(restrictions)
+
+                <span class="cov0" title="0">for _, y := range restrictions </span><span class="cov0" title="0">{
+                        if y.ReservationId &gt; 0 </span><span class="cov0" title="0">{
+
+                                for d := y.StartDate; !d.After(y.EndDate); d = d.AddDate(0, 0, 1) </span><span class="cov0" title="0">{
+                                        reservationMap[d.Format("2006-01-2")] = y.ReservationId
+
+                                }</span>
+
+                        } else<span class="cov0" title="0"> {
+                                blockMap[y.StartDate.Format("2006-01-2")] = y.Id
+                        }</span>
+                }
+
+                <span class="cov0" title="0">data[fmt.Sprintf("reservation_map_%d", x.ID)] = reservationMap
+                data[fmt.Sprintf("block_map_%d", x.ID)] = blockMap
+
+                m.App.Session.Put(r.Context(), fmt.Sprintf("block_map_%d", x.ID), blockMap)</span>
+
+        }
+
+        <span class="cov0" title="0">render.Template(w, r, "admin-reservations-calendar.page.tmpl", &amp;models.TemplateData{
+                StringMap: stringMap,
+                Data:      data,
+                IntMap:    intMap,
+        })</span>
+}
+
+func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+        src := chi.URLParam(r, "src")
+
+        err := m.DB.UpdateProcessedForReservation(id, 1)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Println(err)
+        }</span>
+
+        <span class="cov0" title="0">year := r.URL.Query().Get("y")
+        month := r.URL.Query().Get("m")
+
+        m.App.Session.Put(r.Context(), "flash", "Marked as processed")
+        if year == "" </span><span class="cov0" title="0">{
+                http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+        }</span> else<span class="cov0" title="0"> {
+                http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&amp;m=%s", year, month), http.StatusSeeOther)
+        }</span>
+
+}
+
+func (m *Repository) AdminDeleteReservation(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+        src := chi.URLParam(r, "src")
+
+        err := m.DB.DeleteReservation(id)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Println(err)
+        }</span>
+
+        <span class="cov0" title="0">year := r.URL.Query().Get("y")
+        month := r.URL.Query().Get("m")
+
+        m.App.Session.Put(r.Context(), "flash", "Reservation Deleted")
+        if year == "" </span><span class="cov0" title="0">{
+                http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+        }</span> else<span class="cov0" title="0"> {
+                http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&amp;m=%s", year, month), http.StatusSeeOther)
+        }</span>
+
+}
+
+func (m *Repository) AdminPostReservationsCalendar(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        err := r.ParseForm()
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">year, _ := strconv.Atoi(r.Form.Get("y"))
+        month, _ := strconv.Atoi(r.Form.Get("m"))
+
+        rooms, err := m.DB.AllRooms()
+        if err != nil </span><span class="cov0" title="0">{
+                helpers.ServerError(w, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">form := forms.New(r.PostForm)
+
+        for _, x := range rooms </span><span class="cov0" title="0">{
+                //Get the block map from the session
+                // Loop through entier map, if we have an entry in the map
+                // that does not exist in our post data and if the restriction id &gt; 0
+                // then it is a block
+
+                curMap := m.App.Session.Get(r.Context(), fmt.Sprintf("block_map_%d", x.ID)).(map[string]int)
+                for name, value := range curMap </span><span class="cov0" title="0">{
+                        if val, ok := curMap[name]; ok </span><span class="cov0" title="0">{
+
+                                if val &gt; 0 </span><span class="cov0" title="0">{
+                                        if !form.Has(fmt.Sprintf("remove_block_%d_%s", x.ID, name)) </span><span class="cov0" title="0">{
+                                                //delete restriction id
+                                                //log.Println("would delete block ", value)
+                                                err := m.DB.DeleteBlockByID(value)
+                                                if err != nil </span><span class="cov0" title="0">{
+                                                        log.Println(err)
+                                                }</span>
+                                        }
+                                }
+
+                        }
+                }
+
+        }
+
+        <span class="cov0" title="0">for name, _ := range r.PostForm </span><span class="cov0" title="0">{
+                if strings.HasPrefix(name, "add_block") </span><span class="cov0" title="0">{
+                        exploded := strings.Split(name, "_")
+                        roomId, _ := strconv.Atoi(exploded[2])
+                        startDate, err := time.Parse("2006-01-2", exploded[3])
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Println(err)
+                        }</span>
+
+                        //log.Println("Would insert block for ", roomId, "for date ", exploded[3])
+                        <span class="cov0" title="0">err = m.DB.InsertBlockForRoom(roomId, startDate)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Println(err)
+                        }</span>
+                }
+        }
+
+        <span class="cov0" title="0">m.App.Session.Put(r.Context(), "flash", "Changes Saved")
+
+        http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%d&amp;m=%d", year, month), http.StatusSeeOther)</span>
 }
 </pre>
 		

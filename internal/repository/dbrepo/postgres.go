@@ -3,6 +3,7 @@ package dbrepo
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/msavanan/bookings/internal/models"
@@ -491,14 +492,33 @@ func (m *postgresDBRepo) GetRestrictionForRoomByDate(roomId int, start, end time
 
 }
 
-// Id            int
-// StartDate     time.Time
-// EndDate       time.Time
-// RoomId        int
-// ReservationId int
-// RestrictionId int
-// CreatedAt     time.Time
-// UpdatedAt     time.Time
-// Room          Room
-// Reservation   Reservation
-// Restrictions  Restriction
+func (m *postgresDBRepo) InsertBlockForRoom(roomId int, startDate time.Time) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `INSERT INTO room_restrictions (start_date, end_date, room_id, restriction_id, created_at, updated_at) 
+			  VALUES ($1, $2, $3, $4, $5, $6)`
+
+	_, err := m.DB.ExecContext(ctx, query, startDate, startDate.AddDate(0, 0, 1), roomId, 2, time.Now(), time.Now())
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+
+}
+
+func (m *postgresDBRepo) DeleteBlockByID(roomId int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `DELETE FROM room_restrictions WHERE id = $1`
+
+	_, err := m.DB.ExecContext(ctx, query, roomId)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+
+}

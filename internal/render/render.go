@@ -18,19 +18,19 @@ import (
 var functions = template.FuncMap{
 	"humanDate":  HumanDate,
 	"formatDate": FormatDate,
-	"iterate":    iterate,
-	"add":        add,
+	"iterate":    Iterate,
+	"add":        Add,
 }
 
 var app *config.AppConfig
 
 var pathToTemplates = "./templates"
 
-func add(a, b int) int {
+func Add(a, b int) int {
 	return a + b
 }
 
-func iterate(count int) []int {
+func Iterate(count int) []int {
 	var i int
 	var items []int
 	for i = 0; i < count; i++ {

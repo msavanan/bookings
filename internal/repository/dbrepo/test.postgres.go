@@ -63,7 +63,12 @@ func (m *postgresTestDBRepo) UpdateUser(u models.User) error {
 	return nil
 }
 func (m *postgresTestDBRepo) Authenticate(email, testPassword string) (int, string, error) {
-	return 1, "", nil
+	if email == "me@here.ca" {
+		return 1, "", nil
+	}
+
+	return 0, "", errors.New("invalid email")
+
 }
 
 func (m *postgresTestDBRepo) AllReservations() ([]models.Reservation, error) {
@@ -104,4 +109,14 @@ func (m *postgresTestDBRepo) GetRestrictionForRoomByDate(roomId int, start, end 
 	var roomRestritions []models.RoomRestriction
 
 	return roomRestritions, nil
+}
+
+func (m *postgresTestDBRepo) InsertBlockForRoom(roomId int, startDate time.Time) error {
+	return nil
+}
+
+func (m *postgresTestDBRepo) DeleteBlockByID(roomId int) error {
+
+	return nil
+
 }

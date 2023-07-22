@@ -25,8 +25,20 @@ var session *scs.SessionManager
 
 const pathToTemplates = "./../../templates"
 
+var functions = template.FuncMap{
+	"humanDate":  render.HumanDate,
+	"formatDate": render.FormatDate,
+	"iterate":    render.Iterate,
+	"add":        render.Add,
+}
+
 func TestMain(m *testing.M) {
 	gob.Register(models.Reservation{})
+	gob.Register(models.User{})
+	gob.Register(models.Restriction{})
+	//gob.Register(models.RoomRestriction{})
+	gob.Register(models.Room{})
+	gob.Register(map[string]int{})
 
 	app.InProduction = false
 
@@ -100,6 +112,26 @@ func getRoutes() http.Handler {
 
 	mux.Get("/reservation-summary", Repo.ReservationSummary)
 
+	mux.Get("/user/login", Repo.ShowLogin)
+	mux.Post("/user/login", Repo.PostShowLogin)
+	mux.Get("/user/logout", Repo.Logout)
+
+	mux.Route("/admin", func(mux chi.Router) {
+		//mux.Use(Auth)
+
+		mux.Get("/dashboard", Repo.AdminDashboard)
+		mux.Get("/reservations-new", Repo.AdminReservationsNew)
+		mux.Get("/reservations-all", Repo.AdminReservationsAll)
+		mux.Get("/reservations-calendar", Repo.AdminReservationsCalendar)
+		mux.Post("/reservations-calendar", Repo.AdminPostReservationsCalendar)
+
+		mux.Get("/reservations/{src}/{id}/show", Repo.AdminShowReservation)
+		mux.Post("/reservations/{src}/{id}", Repo.AdminPostShowReservation)
+		mux.Get("/process-reservation/{src}/{id}/do", Repo.AdminProcessReservation)
+		mux.Get("/delete-reservation/{src}/{id}/do", Repo.AdminDeleteReservation)
+
+	})
+
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
@@ -119,7 +151,12 @@ func CreateTestTemplateCache() (map[string]*template.Template, error) {
 	for _, page := range pages {
 		name := filepath.Base(page)
 
-		ts, err := template.New(name).ParseFiles(page)
+		// ts, err := template.New(name).ParseFiles(page)
+		// if err != nil {
+		// 	return cache, err
+		// }
+
+		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
 		if err != nil {
 			return cache, err
 		}

@@ -16,7 +16,9 @@
               </p>
 
               <form method="post" action="/admin/reservations/{{$src}}/{{$res.Id}}" class="" novalidate>
-              <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" >             
+              <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" >
+              <input type="hidden" name="month" value="{{index .StringMap "month"}}" >
+              <input type="hidden" name="year" value="{{index .StringMap "year"}}" >
 
                 <div class="form-group mt-5">
                     <label for="first_name">First Name</label>
@@ -61,7 +63,9 @@
                     {{end}}
 
                     <input type="submit" class="btn btn-primary" value="Save">
-                    <a href="#!" class="btn btn-info" onclick="processRes({{$res.Id}})">Mark as Processed</a>
+                    {{if eq $res.Processed 0}}
+                        <a href="#!" class="btn btn-info" onclick="processRes({{$res.Id}})">Mark as Processed</a>
+                    {{end}}
                 </div>
 
                 <div class="float-end">
@@ -83,7 +87,9 @@ function processRes(id){
             msg:"Are you sure?",
             callback:function(result){
                 if (result !== false ){
-                    window.location.href = "/admin/process-reservation/{{$src}}/" + id;
+                    window.location.href = "/admin/process-reservation/{{$src}}/" 
+                    + id
+                    + "/do?y={{index .StringMap "year"}}&m={{index .StringMap "month"}}" ;
                 }
                 
             }
@@ -97,7 +103,9 @@ function deleteRes(id){
             msg:"Are you sure?",
             callback:function(result){
                 if (result !== false ){
-                    window.location.href = "/admin/delete-reservation/{{$src}}/" + id;
+                    window.location.href = "/admin/delete-reservation/{{$src}}/" 
+                    + id
+                    + "/do?y={{index .StringMap "year"}}&m={{index .StringMap "month"}}" ;
                 }
                 
             }
